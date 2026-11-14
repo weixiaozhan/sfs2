@@ -93,7 +93,7 @@ function stage(f) {
   let res = null, n = 0, deployed = false;
   while (!res && n++ < 50 * 4000) {
     const alt = Math.hypot(v.pos.x, v.pos.y) - b.radius;
-    if (!deployed && alt < 3000) { stage(f); deployed = true; }
+    if (!deployed && alt < 2400) { stage(f); deployed = true; }
     res = E.physStep(v, 0.02, 0);
   }
   console.log('landing:', res, 'impact', v.impactSpeed && v.impactSpeed.toFixed(2), 'm/s, parts', v.parts.length);
