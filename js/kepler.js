@@ -73,19 +73,38 @@ function orbitElements(rx, ry, vx, vy, mu) {
   return { a, e, p, h, rp, ra, w, period, energy };
 }
 
-// 圆锥曲线采样（相对中心天体），超出 rmax 的部分被裁掉
-function conicPoints(el, rmax, n) {
-  const pts = [];
-  if (!(el.p > 1)) return pts;
-  let lim = Math.PI;
-  if (!(el.ra <= rmax)) {
-    if (!isFinite(rmax)) lim = el.e >= 1 ? Math.acos(-1 / el.e) * 0.995 : Math.PI;
-    else lim = Math.acos(Math.max(-1, Math.min(1, (el.p / rmax - 1) / el.e)));
-  }
-  for (let i = 0; i <= n; i++) {
-    const nu = -lim + 2 * lim * i / n;
-    const r = el.p / (1 + el.e * Math.cos(nu));
-    pts.push([r * Math.cos(el.w + nu), r * Math.sin(el.w + nu)]);
-  }
-  return pts;
+// 圆锥曲线可见的真近点角范围（±lim），超出 rmax 的部分被裁掉；轨道退化时返回 0
+function conicLimit(el, rmax) {
+  if (!(el.p > 1)) return 0;
+  if (el.ra <= rmax) return Math.PI;
+  if (!isFinite(rmax)) return el.e >= 1 ? Math.acos(-1 / el.e) * 0.995 : Math.PI;
+  return Math.acos(Math.max(-1, Math.min(1, (el.p / rmax - 1) / el.e)));
+}
+function conicPoint(el, nu) {
+  const r = el.p / (1 + el.e * Math.cos(nu));
+  return [r * Math.cos(el.w + nu), r * Math.sin(el.w + nu)];
+}
+// 自适应采样：对落在视口内的弧段不断细分，直到每段在屏幕上不超过 maxPx 像素。
+// toScreen(pt) -> [sx, sy]；返回屏幕坐标折线
+function conicScreenPath(el, rmax, toScreen, W, H, maxPx) {
+  const lim = conicLimit(el, rmax), out = [];
+  if (!lim) return out;
+  const at = (nu) => toScreen(conicPoint(el, nu));
+  const sub = (n0, a, n1, b, depth) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+    if (len > maxPx && depth < 22) {
+      const m = len * 0.2 + 4;   // 弧相对弦的鼓出量留余量
+      if (Math.max(a[0], b[0]) > -m && Math.min(a[0], b[0]) < W + m && Math.max(a[1], b[1]) > -m && Math.min(a[1], b[1]) < H + m) {
+        const nm = 0.5 * (n0 + n1), mid = at(nm);
+        sub(n0, a, nm, mid, depth + 1); sub(nm, mid, n1, b, depth + 1);
+        return;
+      }
+    }
+    out.push(b);
+  };
+  const N = 96;
+  let pn = -lim, pp = at(pn);
+  out.push(pp);
+  for (let i = 1; i <= N; i++) { const nu = -lim + 2 * lim * i / N, pt = at(nu); sub(pn, pp, nu, pt, 0); pn = nu; pp = pt; }
+  return out;
 }
