@@ -1,6 +1,7 @@
 'use strict';
 // 星轨工坊 —— 天体与部件数据（单位：米 / 秒 / 吨 / 千牛）
 const G0 = 9.80665;
+const CHUTE_MAX_ALT = 2500;   // 降落伞可开伞的最大离地高度（米）
 
 const BODIES = {
   helion: { name: '赫利昂', kind: 'star', radius: 3.5e7, mu: 3.3e17, parent: null, color: '#ffd27a' },
@@ -44,7 +45,7 @@ function atmoDensity(b, alt) {
 const PARTS = {
   capsule: { name: '指令舱', cat: '指令', w: 2, h: 2, mass: 1.2, command: true, desc: '载人指令舱，火箭的大脑' },
   probe: { name: '探测核心', cat: '指令', w: 2, h: 1, mass: 0.25, command: true, desc: '轻量无人控制核心' },
-  chute: { name: '降落伞', cat: '指令', w: 2, h: 1, mass: 0.1, chute: true, desc: '在大气中减速着陆' },
+  chute: { name: '降落伞', cat: '指令', w: 2, h: 1, mass: 0.1, chute: true, desc: '2500 m 以下的大气中可开伞' },
   nose: { name: '整流罩', cat: '结构', w: 2, h: 2, mass: 0.1, nose: true, desc: '降低空气阻力' },
   tankS: { name: '燃料箱 S', cat: '燃料', w: 2, h: 2, mass: 0.2, fuel: 1.8, desc: '燃料 1.8 t' },
   tankM: { name: '燃料箱 M', cat: '燃料', w: 2, h: 4, mass: 0.4, fuel: 3.6, desc: '燃料 3.6 t' },

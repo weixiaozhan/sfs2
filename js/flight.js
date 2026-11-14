@@ -172,7 +172,8 @@ const Flight = {
     const v = this.vessel, b = BODIES[v.body];
     const list = v.parts.filter((p) => ids.includes(p.id) && p.def.chute && !p.deployed);
     if (!list.length) return false;
-    if (atmoDensity(b, Math.hypot(v.pos.x, v.pos.y) - b.radius) <= 0) { this.toast('这里没有空气，降落伞无法展开'); return false; }
+    if (!b.atmo) { this.toast('这里没有空气，降落伞无法展开'); return false; }
+    if (this.altitude() > CHUTE_MAX_ALT) { this.toast(`高度太高，降落伞只能在 ${CHUTE_MAX_ALT} m 以下打开`); return false; }
     for (const p of list) p.deployed = true;
     this.toast('降落伞已展开');
     return true;
@@ -354,12 +355,18 @@ const Flight = {
     setTimeout(() => d.remove(), 3200);
   },
 
+  // 箭体底部的离地高度（与 HUD 显示一致）
+  altitude() {
+    const v = this.vessel, b = BODIES[v.body];
+    let minY = Infinity; for (const c of v.corners) minY = Math.min(minY, c[1]);
+    return Math.max(0, Math.hypot(v.pos.x, v.pos.y) - b.radius - (v.com.y - minY));
+  },
+
   // ---------- HUD ----------
   updateHud() {
     const v = this.vessel, b = BODIES[v.body];
     const r = Math.hypot(v.pos.x, v.pos.y), ux = v.pos.x / r, uy = v.pos.y / r;
-    let minY = Infinity; for (const c of v.corners) minY = Math.min(minY, c[1]);
-    const alt = Math.max(0, r - b.radius - (v.com.y - minY));
+    const alt = this.altitude();
     const sp = Math.hypot(v.vel.x, v.vel.y), vr = v.vel.x * ux + v.vel.y * uy, vh = Math.abs(ux * v.vel.y - uy * v.vel.x);
     $('hBody').textContent = b.name;
     $('hTime').textContent = 'T+ ' + fmtTime(this.t);
