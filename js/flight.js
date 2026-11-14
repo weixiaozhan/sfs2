@@ -470,12 +470,13 @@ const Flight = {
       const cols = ['#6fd3ff', '#ffb04a', '#c58bff'];
       this.pred.forEach((seg, i) => {
         const b = BODIES[seg.body], ba = bodyAbs(seg.body, t);
-        const pts = conicPoints(seg.el, b.soi, 220);
+        const pts = conicScreenPath(seg.el, b.soi, (p) => [X(ba.x + p[0]), Y(ba.y + p[1])], W, H, 5);
         if (!pts.length) return;
         ctx.strokeStyle = cols[i]; ctx.lineWidth = 1.6; ctx.globalAlpha = i ? 0.85 : 1;
         if (i) ctx.setLineDash([7, 5]);
         ctx.beginPath();
-        for (const p of pts) ctx.lineTo(X(ba.x + p[0]), Y(ba.y + p[1]));
+        ctx.lineJoin = 'round';
+        for (const p of pts) ctx.lineTo(p[0], p[1]);
         ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
         const label = (x, y, text) => {
           const px = X(ba.x + x), py = Y(ba.y + y);
