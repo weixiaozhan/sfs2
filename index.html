@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>星轨工坊 · Orbit Forge</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="build" class="screen">
+  <header>
+    <h1>星轨工坊 <small>Orbit Forge</small></h1>
+    <div class="bar">
+      <select id="presetSel" title="载入示例火箭"><option value="">示例火箭…</option></select>
+      <button id="mirrorBtn" class="toggle on" title="左右对称放置">对称</button>
+      <button id="clearBtn">清空</button>
+      <button id="statsBtn" class="mobile-only">数据</button>
+      <button id="launchBtn" class="primary">发射 ▶</button>
+    </div>
+  </header>
+  <aside id="palette"></aside>
+  <main id="buildWrap"><canvas id="buildCanvas"></canvas><div id="trash">拖到这里删除</div><div id="buildHint"></div></main>
+  <aside id="stats"></aside>
+</div>
+
+<div id="flight" class="screen hidden">
+  <canvas id="flightCanvas"></canvas>
+  <div id="hudTL" class="panel">
+    <div class="row big"><span id="hBody">艾瑞亚</span><span id="hTime">00:00:00</span></div>
+    <div class="row"><label>高度</label><b id="hAlt">0 m</b></div>
+    <div class="row"><label>速度</label><b id="hSpd">0 m/s</b></div>
+    <div class="row"><label>垂直 / 水平</label><b id="hVH">0 / 0</b></div>
+    <div class="row"><label>远点 Ap</label><b id="hAp">—</b></div>
+    <div class="row"><label>近点 Pe</label><b id="hPe">—</b></div>
+    <div class="row"><label>质量 / 推重比</label><b id="hMass">—</b></div>
+    <div class="row"><label>燃料 / Δv</label><b id="hFuel">—</b></div>
+  </div>
+  <div id="hudTR">
+    <div class="bar">
+      <button id="mapBtn" title="M">地图</button>
+      <button id="centerBtn" title="回到火箭">⌖</button>
+      <button id="missionBtn">任务</button>
+      <button id="helpBtn">？</button>
+      <button id="revertBtn" title="R">重飞</button>
+      <button id="backBtn" title="Esc">装配</button>
+    </div>
+    <div id="missions" class="panel hidden"></div>
+    <div id="help" class="panel hidden">
+      <b>操作</b><br>
+      A / D 或 ← / →：转向<br>
+      W / S 或 Shift / Ctrl：油门增减<br>
+      Z 满油门 · X 关闭油门<br>
+      空格：执行下一级<br>
+      , / . ：时间加速减 / 加<br>
+      M：地图 · 滚轮：缩放 · 拖动：平移<br>
+      点击部件：开关发动机 / 分离 / 开伞<br>
+      <br><b>入轨提示</b><br>
+      垂直起飞，约 1 km 后缓慢向东倾斜；<br>
+      远点升到 40 km 以上后关机滑行，<br>
+      在远点附近水平加速直到近点也高于 30 km。
+    </div>
+  </div>
+  <div id="toasts"></div>
+  <div id="hudBL">
+    <canvas id="nav" width="220" height="220"></canvas>
+    <div class="rotBtns">
+      <button id="rotL" class="hold">⟲</button>
+      <button id="rotR" class="hold">⟳</button>
+    </div>
+  </div>
+  <div id="hudBC" class="panel">
+    <button id="warpDown">◀◀</button>
+    <span id="hWarp">1×</span>
+    <button id="warpUp">▶▶</button>
+  </div>
+  <div id="hudBR">
+    <div id="stageList" class="panel"></div>
+    <div class="thrWrap">
+      <div class="thrCol">
+        <button id="thrMax">满</button>
+        <div id="thrBar"><div id="thrFill"></div></div>
+        <button id="thrCut">关</button>
+      </div>
+      <button id="stageBtn" class="primary">分级<br><small>空格</small></button>
+    </div>
+  </div>
+  <div id="overlay" class="hidden">
+    <div class="panel dialog">
+      <h2 id="ovTitle"></h2>
+      <p id="ovText"></p>
+      <div class="bar"><button id="ovRetry" class="primary">重新发射</button><button id="ovBuild">回到装配</button><button id="ovClose">继续观察</button></div>
+    </div>
+  </div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/kepler.js"></script>
+<script src="js/rocket.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/partsdraw.js"></script>
+<script src="js/builder.js"></script>
+<script src="js/flight.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+'use strict';
+// 二体轨道数学：普适变量法传播 + 轨道根数
+function stumpC(z) {
+  if (z > 1e-6) return (1 - Math.cos(Math.sqrt(z))) / z;
+  if (z < -1e-6) return (Math.cosh(Math.sqrt(-z)) - 1) / (-z);
+  return 0.5 - z / 24;
+}
+function stumpS(z) {
+  if (z > 1e-6) { const s = Math.sqrt(z); return (s - Math.sin(s)) / (s * s * s); }
+  if (z < -1e-6) { const s = Math.sqrt(-z); return (Math.sinh(s) - s) / (s * s * s); }
+  return 1 / 6 - z / 120;
+}
+
+function keplerPropagate(rx, ry, vx, vy, mu, dt) {
+  if (dt === 0) return { x: rx, y: ry, vx, vy };
+  if (dt < 0) {
+    const s = keplerPropagate(rx, ry, -vx, -vy, mu, -dt);
+    s.vx = -s.vx; s.vy = -s.vy;
+    return s;
+  }
+  const r0 = Math.hypot(rx, ry), v2 = vx * vx + vy * vy, rv = rx * vx + ry * vy;
+  const sm = Math.sqrt(mu);
+  const alpha = 2 / r0 - v2 / mu;
+  if (alpha > 0) {
+    const T = 2 * Math.PI / (sm * Math.pow(alpha, 1.5));
+    if (dt > T) dt = dt % T;
+  }
+  const F = (chi) => {
+    const z = alpha * chi * chi;
+    return rv / sm * chi * chi * stumpC(z) + (1 - alpha * r0) * chi * chi * chi * stumpS(z) + r0 * chi - sm * dt;
+  };
+  // F 单调递增，先找区间再做带保护的牛顿迭代
+  let lo = 0, hi = alpha > 0 ? sm * dt * alpha : sm * dt / r0;
+  if (!(hi > 0)) hi = 1;
+  for (let i = 0; i < 200; i++) {
+    const f = F(hi);
+    if (!isFinite(f) || f >= 0) break;
+    lo = hi; hi *= 2;
+  }
+  let chi = 0.5 * (lo + hi);
+  for (let i = 0; i < 80; i++) {
+    const z = alpha * chi * chi, C = stumpC(z), S = stumpS(z);
+    const f = rv / sm * chi * chi * C + (1 - alpha * r0) * chi * chi * chi * S + r0 * chi - sm * dt;
+    if (!isFinite(f) || f > 0) hi = chi; else lo = chi;
+    const df = rv / sm * chi * (1 - z * S) + (1 - alpha * r0) * chi * chi * C + r0;
+    let next = chi - f / df;
+    if (!isFinite(next) || next <= lo || next >= hi) next = 0.5 * (lo + hi);
+    if (Math.abs(next - chi) <= 1e-13 * Math.abs(chi)) { chi = next; break; }
+    chi = next;
+  }
+  const z = alpha * chi * chi, C = stumpC(z), S = stumpS(z);
+  const f = 1 - chi * chi / r0 * C, g = dt - chi * chi * chi / sm * S;
+  const x = f * rx + g * vx, y = f * ry + g * vy;
+  const r = Math.hypot(x, y);
+  const fd = sm / (r * r0) * (z * S - 1) * chi, gd = 1 - chi * chi / r * C;
+  return { x, y, vx: fd * rx + gd * vx, vy: fd * ry + gd * vy };
+}
+
+function orbitElements(rx, ry, vx, vy, mu) {
+  const r = Math.hypot(rx, ry), v2 = vx * vx + vy * vy, rv = rx * vx + ry * vy;
+  const h = rx * vy - ry * vx;
+  const ex = ((v2 - mu / r) * rx - rv * vx) / mu, ey = ((v2 - mu / r) * ry - rv * vy) / mu;
+  const e = Math.hypot(ex, ey);
+  const energy = v2 / 2 - mu / r;
+  const a = -mu / (2 * energy);
+  const p = h * h / mu;
+  // 束缚轨道用半长轴计算，竖直上升（近乎径向）时也稳定
+  const bound = energy < 0;
+  const rp = bound ? Math.max(0, a * (1 - e)) : p / (1 + e);
+  const ra = bound ? a * (1 + e) : Infinity;
+  const w = e > 1e-9 ? Math.atan2(ey, ex) : Math.atan2(ry, rx);
+  const period = bound ? 2 * Math.PI * Math.sqrt(a * a * a / mu) : Infinity;
+  return { a, e, p, h, rp, ra, w, period, energy };
+}
+
+// 圆锥曲线采样（相对中心天体），超出 rmax 的部分被裁掉
+function conicPoints(el, rmax, n) {
+  const pts = [];
+  if (!(el.p > 1)) return pts;
+  let lim = Math.PI;
+  if (!(el.ra <= rmax)) {
+    if (!isFinite(rmax)) lim = el.e >= 1 ? Math.acos(-1 / el.e) * 0.995 : Math.PI;
+    else lim = Math.acos(Math.max(-1, Math.min(1, (el.p / rmax - 1) / el.e)));
+  }
+  for (let i = 0; i <= n; i++) {
+    const nu = -lim + 2 * lim * i / n;
+    const r = el.p / (1 + el.e * Math.cos(nu));
+    pts.push([r * Math.cos(el.w + nu), r * Math.sin(el.w + nu)]);
+  }
+  return pts;
+}
